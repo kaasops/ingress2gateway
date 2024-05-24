@@ -194,7 +194,9 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 				gatewayv1.SecretObjectReference{Name: gatewayv1.ObjectName(tls.SecretName)})
 		}
 		gwKey := fmt.Sprintf("%s/%s", rg.namespace, rg.ingressClass)
-		listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
+		if options.PredefinedGateway == "" {
+			listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
+		}
 		httpRoute, errs := rg.toHTTPRoute(options)
 		httpRoutes = append(httpRoutes, httpRoute)
 		errors = append(errors, errs...)
