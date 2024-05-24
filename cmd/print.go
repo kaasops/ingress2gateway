@@ -60,6 +60,7 @@ type PrintRunner struct {
 	// providers indicates which providers are used to execute convert action.
 	providers []string
 
+	// predefinedGateway is the gateway reference in namespace/name format that will be used as parent to all httpRoutes.
 	predefinedGateway string
 }
 

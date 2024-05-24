@@ -414,3 +414,12 @@ func toBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.
 		},
 	}, nil
 }
+
+func PredefinedGatewayRef(gateway string) gatewayv1.ParentReference {
+	namespace := gatewayv1.Namespace(strings.Split(gateway, "/")[0])
+	name := gatewayv1.ObjectName(strings.Split(gateway, "/")[1])
+	return gatewayv1.ParentReference{
+		Name:      name,
+		Namespace: &namespace,
+	}
+}
