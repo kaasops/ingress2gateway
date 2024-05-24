@@ -43,8 +43,9 @@ type ProviderConstructor func(conf *ProviderConf) Provider
 // ProviderConf contains all the configuration required for every concrete
 // Provider implementation.
 type ProviderConf struct {
-	Client    client.Client
-	Namespace string
+	Client            client.Client
+	Namespace         string
+	PredefinedGateway string
 }
 
 // The Provider interface specifies the required functionality which needs to be
@@ -84,6 +85,7 @@ type ImplementationSpecificHTTPPathTypeMatchConverter func(*gatewayv1.HTTPPathMa
 // implementation-specific fields of the ingress API.
 type ProviderImplementationSpecificOptions struct {
 	ToImplementationSpecificHTTPPathTypeMatch ImplementationSpecificHTTPPathTypeMatchConverter
+	PredefinedGateway                         string
 }
 
 // GatewayResources contains all Gateway-API objects.

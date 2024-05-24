@@ -24,14 +24,18 @@ import (
 
 // converter implements the ToGatewayAPI function of i2gw.ResourceConverter interface.
 type converter struct {
-	featureParsers []i2gw.FeatureParser
+	featureParsers                []i2gw.FeatureParser
+	implementationSpecificOptions i2gw.ProviderImplementationSpecificOptions
 }
 
 // newConverter returns an ingress-nginx converter instance.
-func newConverter() *converter {
+func newConverter(conf *i2gw.ProviderConf) *converter {
 	return &converter{
 		featureParsers: []i2gw.FeatureParser{
 			canaryFeature,
+		},
+		implementationSpecificOptions: i2gw.ProviderImplementationSpecificOptions{
+			PredefinedGateway: conf.PredefinedGateway,
 		},
 	}
 }
@@ -43,7 +47,7 @@ func (c *converter) convert(storage *storage) (i2gw.GatewayResources, field.Erro
 
 	// Convert plain ingress resources to gateway resources, ignoring all
 	// provider-specific features.
-	gatewayResources, errs := common.ToGateway(ingressList, i2gw.ProviderImplementationSpecificOptions{})
+	gatewayResources, errs := common.ToGateway(ingressList, c.implementationSpecificOptions)
 	if len(errs) > 0 {
 		return i2gw.GatewayResources{}, errs
 	}

@@ -44,7 +44,7 @@ func NewProvider(conf *i2gw.ProviderConf) i2gw.Provider {
 	return &Provider{
 		storage:        newResourcesStorage(),
 		resourceReader: newResourceReader(conf),
-		converter:      newConverter(),
+		converter:      newConverter(conf),
 	}
 }
 
