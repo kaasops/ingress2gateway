@@ -304,9 +304,12 @@ func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpeci
 	}
 	httpRoute.SetGroupVersionKind(HTTPRouteGVK)
 
-	if rg.ingressClass != "" {
+	if options.PredefinedGateway != "" {
+		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{PredefinedGatewayRef(options.PredefinedGateway)}
+	} else if rg.ingressClass != "" {
 		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{{Name: gatewayv1.ObjectName(rg.ingressClass)}}
 	}
+
 	if rg.host != "" {
 		httpRoute.Spec.Hostnames = []gatewayv1.Hostname{gatewayv1.Hostname(rg.host)}
 	}
@@ -416,10 +419,14 @@ func toBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.
 }
 
 func PredefinedGatewayRef(gateway string) gatewayv1.ParentReference {
-	namespace := gatewayv1.Namespace(strings.Split(gateway, "/")[0])
-	name := gatewayv1.ObjectName(strings.Split(gateway, "/")[1])
+	result := strings.Split(gateway, "/")
+	if len(result) != 2 {
+		fmt.Printf("error parsing predefined gateway: %s\n", gateway)
+		return gatewayv1.ParentReference{}
+	}
+	ns := gatewayv1.Namespace(result[0])
 	return gatewayv1.ParentReference{
-		Name:      name,
-		Namespace: &namespace,
+		Name:      gatewayv1.ObjectName(result[1]),
+		Namespace: &ns,
 	}
 }
