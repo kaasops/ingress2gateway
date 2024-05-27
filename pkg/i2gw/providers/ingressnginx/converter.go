@@ -35,7 +35,7 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 			canaryFeature,
 		},
 		implementationSpecificOptions: i2gw.ProviderImplementationSpecificOptions{
-			PredefinedGateway: conf.PredefinedGateway,
+			Gateway: conf.Gateway,
 		},
 	}
 }

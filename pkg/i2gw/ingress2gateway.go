@@ -30,7 +30,7 @@ import (
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string, predefinedGateway string) ([]GatewayResources, error) {
+func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string, gateway string) ([]GatewayResources, error) {
 	var clusterClient client.Client
 
 	if inputFile == "" {
@@ -47,9 +47,9 @@ func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile stri
 	}
 
 	providerByName, err := constructProviders(&ProviderConf{
-		Client:            clusterClient,
-		Namespace:         namespace,
-		PredefinedGateway: predefinedGateway,
+		Client:    clusterClient,
+		Namespace: namespace,
+		Gateway:   gateway,
 	}, providers)
 	if err != nil {
 		return nil, err

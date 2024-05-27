@@ -60,8 +60,8 @@ type PrintRunner struct {
 	// providers indicates which providers are used to execute convert action.
 	providers []string
 
-	// predefinedGateway is the gateway reference in namespace/name format that will be used as parent to all httpRoutes.
-	predefinedGateway string
+	// Gateway reference in namespace/name format that will be used as parent for all httpRoutes.
+	gateway string
 }
 
 // PrintGatewayAPIObjects performs necessary steps to digest and print
@@ -78,7 +78,7 @@ func (pr *PrintRunner) PrintGatewayAPIObjects(cmd *cobra.Command, _ []string) er
 		return fmt.Errorf("failed to initialize namespace filter: %w", err)
 	}
 
-	gatewayResources, err := i2gw.ToGatewayAPIResources(cmd.Context(), pr.namespaceFilter, pr.inputFile, pr.providers, pr.predefinedGateway)
+	gatewayResources, err := i2gw.ToGatewayAPIResources(cmd.Context(), pr.namespaceFilter, pr.inputFile, pr.providers, pr.gateway)
 	if err != nil {
 		return err
 	}
@@ -251,8 +251,8 @@ if specified with --namespace.`)
 
 	cmd.Flags().StringSliceVar(&pr.providers, "providers", i2gw.GetSupportedProviders(),
 		fmt.Sprintf("If present, the tool will try to convert only resources related to the specified providers, supported values are %v.", i2gw.GetSupportedProviders()))
-	cmd.Flags().StringVarP(&pr.predefinedGateway, "predefinedGateway", "p", "",
-		`If present, set as parent to all httpRoutes.`)
+	cmd.Flags().StringVarP(&pr.gateway, "gateway", "g", "",
+		`If present, set as parent for all httpRoutes.`)
 	cmd.MarkFlagsMutuallyExclusive("namespace", "all-namespaces")
 	return cmd
 }

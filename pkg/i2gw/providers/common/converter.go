@@ -194,7 +194,7 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 				gatewayv1.SecretObjectReference{Name: gatewayv1.ObjectName(tls.SecretName)})
 		}
 		gwKey := fmt.Sprintf("%s/%s", rg.namespace, rg.ingressClass)
-		if options.PredefinedGateway == "" {
+		if options.Gateway == "" {
 			listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
 		}
 		httpRoute, errs := rg.toHTTPRoute(options)
@@ -304,8 +304,8 @@ func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpeci
 	}
 	httpRoute.SetGroupVersionKind(HTTPRouteGVK)
 
-	if options.PredefinedGateway != "" {
-		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{PredefinedGatewayRef(options.PredefinedGateway)}
+	if options.Gateway != "" {
+		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{GatewayRef(options.Gateway)}
 	} else if rg.ingressClass != "" {
 		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{{Name: gatewayv1.ObjectName(rg.ingressClass)}}
 	}
@@ -418,7 +418,7 @@ func toBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.
 	}, nil
 }
 
-func PredefinedGatewayRef(gateway string) gatewayv1.ParentReference {
+func GatewayRef(gateway string) gatewayv1.ParentReference {
 	result := strings.Split(gateway, "/")
 	if len(result) != 2 {
 		fmt.Printf("error parsing predefined gateway: %s\n", gateway)
