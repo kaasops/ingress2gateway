@@ -33,6 +33,7 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 	return &converter{
 		featureParsers: []i2gw.FeatureParser{
 			canaryFeature,
+			redirectHttpsFeature,
 		},
 		implementationSpecificOptions: i2gw.ProviderImplementationSpecificOptions{
 			Gateway: conf.Gateway,
