@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
-	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,8 +18,10 @@ import (
 
 type IngressReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
+	Scheme    *runtime.Scheme
+	Log       logr.Logger
+	Providers []string
+	Gateway   string
 }
 
 func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -38,27 +39,26 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{}, err
 	}
 
-	resources, errs := common.ToGateway([]networkingv1.Ingress{*instance}, i2gw.ProviderImplementationSpecificOptions{})
-	if len(errs) > 0 {
-		for _, e := range errs {
-			log.Error(e, "Failed to convert Ingress to Gateway")
-		}
-		return ctrl.Result{}, errs[0]
+	resources, err := i2gw.ToGatewayAPIResources(ctx, instance.Namespace, "", r.Providers, r.Gateway)
+
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
-	// for _, v := range resources.Gateways {
-	// 	err = createOrUpdateGateway(ctx, &v, r.Client)
-	// 	if err != nil {
-	// 		log.Error(err, "Failed to create or update Gateway")
-	// 		return ctrl.Result{}, err
-	// 	}
-	// }
-
-	for _, v := range resources.HTTPRoutes {
-		err = createOrUpdateHttpRoute(ctx, &v, r.Client)
-		if err != nil {
-			log.Error(err, "Failed to create or update HTTPRoute")
-			return ctrl.Result{}, err
+	for _, resource := range resources {
+		for _, v := range resource.Gateways {
+			err = createOrUpdateGateway(ctx, &v, r.Client)
+			if err != nil {
+				log.Error(err, "Failed to create or update Gateway")
+				return ctrl.Result{}, err
+			}
+		}
+		for _, v := range resource.HTTPRoutes {
+			err = createOrUpdateHttpRoute(ctx, &v, r.Client)
+			if err != nil {
+				log.Error(err, "Failed to create or update HTTPRoute")
+				return ctrl.Result{}, err
+			}
 		}
 	}
 

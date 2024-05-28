@@ -251,8 +251,9 @@ if specified with --namespace.`)
 
 	cmd.Flags().StringSliceVar(&pr.providers, "providers", i2gw.GetSupportedProviders(),
 		fmt.Sprintf("If present, the tool will try to convert only resources related to the specified providers, supported values are %v.", i2gw.GetSupportedProviders()))
-	cmd.Flags().StringVarP(&pr.gateway, "gateway", "g", "",
-		`If present, set as parent for all httpRoutes.`)
+
+	cmd.Flags().StringVarP(&pr.gateway, "gateway", "g", "", `If present, set as parent for all httpRoutes.`)
+
 	cmd.MarkFlagsMutuallyExclusive("namespace", "all-namespaces")
 	return cmd
 }

@@ -23,6 +23,7 @@ var (
 	enableLeaderElection bool
 	probeAddr            string
 	providers            []string
+	gateway              string
 )
 
 func init() {
@@ -51,9 +52,11 @@ func runController(cmd *cobra.Command, _ []string) error {
 	}
 
 	if err = (&controllers.IngressReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Ingress"),
+		Client:    mgr.GetClient(),
+		Scheme:    mgr.GetScheme(),
+		Log:       ctrl.Log.WithName("controllers").WithName("Ingress"),
+		Providers: providers,
+		Gateway:   gateway,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Ingress")
 		return err
@@ -90,6 +93,7 @@ func newControllerCommand() *cobra.Command {
 	cmd.Flags().StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	cmd.Flags().StringSliceVar(&providers, "providers", i2gw.GetSupportedProviders(),
 		fmt.Sprintf("If present, the tool will try to convert only resources related to the specified providers, supported values are %v.", i2gw.GetSupportedProviders()))
+	cmd.Flags().StringVarP(&gateway, "gateway", "g", "", `If present, set as parent for all httpRoutes.`)
 
 	return cmd
 }

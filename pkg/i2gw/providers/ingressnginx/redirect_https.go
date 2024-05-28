@@ -13,7 +13,6 @@ import (
 )
 
 var (
-	// RedirectHttpsFeature is the feature that redirects HTTP to HTTPS
 	httpsRedirectScheme = "https"
 	httpsRedirectPort   = gatewayv1.PortNumber(443)
 )
@@ -21,25 +20,27 @@ var (
 func redirectHttpsFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
 	ruleGroups := common.GetRuleGroups(ingresses)
 	for _, rg := range ruleGroups {
-		for _, ir := range rg.Rules {
-			ingress := ir.Ingress
-			if redirectHttpsAnnotationEnabled(ingress) {
-				namespaceedName := types.NamespacedName{Namespace: rg.Namespace, Name: httpsRedirectRouteName(rg.Name, rg.Host)}
-				if _, ok := gatewayResources.HTTPRoutes[namespaceedName]; ok {
-					continue
-				}
-				redirectRoute := httpsRedirectHTTPRoute(rg)
-				redirectRoute.Spec.ParentRefs = []gatewayv1.ParentReference{}
-				gatewayResources.HTTPRoutes[namespaceedName] = redirectRoute
+		if redirectHttpsAnnotationEnabled(rg) {
+			key := types.NamespacedName{Namespace: rg.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+			httpRoute, ok := gatewayResources.HTTPRoutes[key]
+			if !ok {
+				continue
 			}
+			redirectRoute := httpsRedirectHTTPRoute(rg)
+			redirectRoute.Spec.ParentRefs = []gatewayv1.ParentReference{httpRoute.Spec.ParentRefs[0]}
+			namespaceedName := types.NamespacedName{Namespace: rg.Namespace, Name: httpsRedirectRouteName(rg.Name, rg.Host)}
+			gatewayResources.HTTPRoutes[namespaceedName] = redirectRoute
 		}
 	}
 	return nil
 }
 
-func redirectHttpsAnnotationEnabled(ingress networkingv1.Ingress) bool {
-	if c := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]; c == "true" {
-		return true
+func redirectHttpsAnnotationEnabled(rg common.IngressRuleGroup) bool {
+	for _, ir := range rg.Rules {
+		ingress := ir.Ingress
+		if c := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]; c == "true" {
+			return true
+		}
 	}
 	return false
 }
