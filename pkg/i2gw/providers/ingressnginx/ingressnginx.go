@@ -22,6 +22,7 @@ import (
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // The Name of the provider.
@@ -37,14 +38,21 @@ type Provider struct {
 	storage        *storage
 	resourceReader *resourceReader
 	converter      *converter
+	Reconciler
 }
 
 // NewProvider constructs and returns the ingress-nginx implementation of i2gw.Provider.
 func NewProvider(conf *i2gw.ProviderConf) i2gw.Provider {
+	reconciler := Reconciler{
+		Client: conf.Client,
+		Scheme: conf.Scheme,
+		Log:    ctrl.Log.WithName("ingress-nginx-provider"),
+	}
 	return &Provider{
 		storage:        newResourcesStorage(),
 		resourceReader: newResourceReader(conf),
 		converter:      newConverter(conf),
+		Reconciler:     reconciler,
 	}
 }
 

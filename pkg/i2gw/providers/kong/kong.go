@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 )
@@ -68,5 +69,13 @@ func (p *Provider) ReadResourcesFromFile(_ context.Context, filename string) err
 		return err
 	}
 	p.storage = storage
+	return nil
+}
+
+func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	return ctrl.Result{}, nil
+}
+
+func (r *Provider) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }

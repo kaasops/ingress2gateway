@@ -23,7 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -56,6 +58,8 @@ type ProviderConf struct {
 type Provider interface {
 	CustomResourceReader
 	ResourceConverter
+	reconcile.Reconciler
+	ControllerCreator
 }
 
 type CustomResourceReader interface {
@@ -76,6 +80,11 @@ type ResourceConverter interface {
 	// ToGatewayAPIResources converts stored API entities associated
 	// with the Provider into GatewayResources.
 	ToGatewayAPI() (GatewayResources, field.ErrorList)
+}
+
+// The ControllerCreator interface specifies the required functionality to create kubernetes controller for the Provider.
+type ControllerCreator interface {
+	SetupWithManager(mgr ctrl.Manager) error
 }
 
 // ImplementationSpecificHTTPPathTypeMatchConverter is an option to customize the ingress implementationSpecific

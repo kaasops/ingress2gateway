@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,15 +16,13 @@ import (
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type IngressReconciler struct {
+type Reconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Log      logr.Logger
-	Provider i2gw.Provider
-	Gateway  string
+	Scheme *runtime.Scheme
+	Log    logr.Logger
 }
 
-func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.Log.WithValues("ingress", req.NamespacedName)
 	log.Info("Reconciling ingress creation request")
 
@@ -40,13 +37,7 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{}, err
 	}
 
-	pConf := &i2gw.ProviderConf{
-		Gateway: r.Gateway,
-	}
-
-	converter := newConverter(pConf)
-
-	resources, errlist := converter.Convert(*instance)
+	resources, errlist := r.converter.Convert(*instance)
 	if len(errlist) > 0 {
 		for _, err := range errlist {
 			log.Error(err, "Failed to convert Ingress to Gateway resources")
@@ -110,7 +101,7 @@ func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c clie
 	return nil
 }
 
-func (r *IngressReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *Provider) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&networkingv1.Ingress{}).
 		Owns(&gwapiv1.HTTPRoute{}).

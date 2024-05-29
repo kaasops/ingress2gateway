@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
-	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/ingressnginx"
 	"github.com/spf13/cobra"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,14 +50,20 @@ func runController(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	if err = (&ingressnginx.IngressReconciler{
+	providerByName, err := i2gw.ConstructProviders(&i2gw.ProviderConf{
 		Client:  mgr.GetClient(),
-		Scheme:  mgr.GetScheme(),
-		Log:     ctrl.Log.WithName("controllers").WithName("Ingress"),
 		Gateway: gateway,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Ingress")
+		Scheme:  mgr.GetScheme(),
+	}, providers)
+	if err != nil {
 		return err
+	}
+
+	for _, provider := range providerByName {
+		if err = provider.SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "Ingress")
+			return err
+		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
