@@ -5,29 +5,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-type Reconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
-	Log    logr.Logger
-}
-
-func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
-	log := r.Log.WithValues("ingress", req.NamespacedName)
+func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	log := p.Log.WithValues("ingress", req.NamespacedName)
 	log.Info("Reconciling ingress creation request")
 
 	instance := &networkingv1.Ingress{}
-	err = r.Get(ctx, req.NamespacedName, instance)
+	err = p.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("Ingress not found. Ignoring since object must be deleted")
@@ -42,7 +34,7 @@ func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 		return ctrl.Result{}, nil
 	}
 
-	resources, errlist := r.converter.Convert(*instance)
+	resources, errlist := p.converter.Convert(*instance)
 	if len(errlist) > 0 {
 		for _, err := range errlist {
 			log.Error(err, "Failed to convert Ingress to Gateway resources")
@@ -51,20 +43,20 @@ func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 	}
 
 	for _, v := range resources.Gateways {
-		if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(instance, &v, p.Scheme); err != nil {
 			return ctrl.Result{}, err
 		}
-		err = createOrUpdateGateway(ctx, &v, r.Client)
+		err = createOrUpdateGateway(ctx, &v, p.Client)
 		if err != nil {
 			log.Error(err, "Failed to create or update Gateway")
 			return ctrl.Result{}, err
 		}
 	}
 	for _, v := range resources.HTTPRoutes {
-		if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
+		if err := controllerutil.SetControllerReference(instance, &v, p.Scheme); err != nil {
 			return ctrl.Result{}, err
 		}
-		err = createOrUpdateHttpRoute(ctx, &v, r.Client)
+		err = createOrUpdateHttpRoute(ctx, &v, p.Client)
 		if err != nil {
 			log.Error(err, "Failed to create or update HTTPRoute")
 			return ctrl.Result{}, err
@@ -106,9 +98,9 @@ func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c clie
 	return nil
 }
 
-func (r *Provider) SetupWithManager(mgr ctrl.Manager) error {
+func (p *Provider) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&networkingv1.Ingress{}).
 		Owns(&gwapiv1.HTTPRoute{}).
-		Complete(r)
+		Complete(p)
 }
