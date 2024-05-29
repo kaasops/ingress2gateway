@@ -28,8 +28,8 @@ func redirectHttpsFeature(ingresses []networkingv1.Ingress, gatewayResources *i2
 			}
 			redirectRoute := httpsRedirectHTTPRoute(rg)
 			redirectRoute.Spec.ParentRefs = []gatewayv1.ParentReference{httpRoute.Spec.ParentRefs[0]}
-			namespaceedName := types.NamespacedName{Namespace: rg.Namespace, Name: httpsRedirectRouteName(rg.Name, rg.Host)}
-			gatewayResources.HTTPRoutes[namespaceedName] = redirectRoute
+			namespacedName := types.NamespacedName{Namespace: rg.Namespace, Name: httpsRedirectRouteName(rg.Name, rg.Host)}
+			gatewayResources.HTTPRoutes[namespacedName] = redirectRoute
 		}
 	}
 	return nil
