@@ -55,9 +55,9 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 	}
 
 	for _, v := range resources.Gateways {
-		// if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
-		// 	return ctrl.Result{}, err
-		// }
+		if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
 		err = createOrUpdateGateway(ctx, &v, r.Client)
 		if err != nil {
 			log.Error(err, "Failed to create or update Gateway")
