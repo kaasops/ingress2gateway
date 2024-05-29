@@ -37,12 +37,17 @@ func (r *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 		return ctrl.Result{}, err
 	}
 
+	if instance.Spec.IngressClassName != nil && *instance.Spec.IngressClassName != NginxIngressClass {
+		log.Info("Ingress class is not nginx. Ignoring")
+		return ctrl.Result{}, nil
+	}
+
 	resources, errlist := r.converter.Convert(*instance)
 	if len(errlist) > 0 {
 		for _, err := range errlist {
 			log.Error(err, "Failed to convert Ingress to Gateway resources")
 		}
-		return ctrl.Result{}, fmt.Errorf("failed to convert Ingress to Gateway resources: %w", errlist)
+		return ctrl.Result{}, errlist.ToAggregate()
 	}
 
 	for _, v := range resources.Gateways {
