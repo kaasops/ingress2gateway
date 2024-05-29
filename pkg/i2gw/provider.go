@@ -46,11 +46,10 @@ type ProviderConstructor func(conf *ProviderConf) Provider
 // ProviderConf contains all the configuration required for every concrete
 // Provider implementation.
 type ProviderConf struct {
-	Client           client.Client
-	Namespace        string
-	Gateway          string
-	SkipIngressClass bool
-	Scheme           *runtime.Scheme
+	Client    client.Client
+	Namespace string
+	Gateway   string
+	Scheme    *runtime.Scheme
 }
 
 // The Provider interface specifies the required functionality which needs to be
@@ -59,8 +58,7 @@ type ProviderConf struct {
 type Provider interface {
 	CustomResourceReader
 	ResourceConverter
-	reconcile.Reconciler
-	ControllerCreator
+	ResourceController
 }
 
 type CustomResourceReader interface {
@@ -84,7 +82,8 @@ type ResourceConverter interface {
 }
 
 // The ControllerCreator interface specifies the required functionality to create kubernetes controller for the Provider.
-type ControllerCreator interface {
+type ResourceController interface {
+	reconcile.Reconciler
 	SetupWithManager(mgr ctrl.Manager) error
 }
 
