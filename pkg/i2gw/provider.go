@@ -20,6 +20,7 @@ import (
 	"context"
 
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,6 +47,7 @@ type ProviderConf struct {
 	Client    client.Client
 	Namespace string
 	Gateway   string
+	Scheme    *runtime.Scheme
 }
 
 // The Provider interface specifies the required functionality which needs to be

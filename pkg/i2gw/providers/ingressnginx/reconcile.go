@@ -1,4 +1,4 @@
-package controllers
+package ingressnginx
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
+	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,10 +19,10 @@ import (
 
 type IngressReconciler struct {
 	client.Client
-	Scheme    *runtime.Scheme
-	Log       logr.Logger
-	Providers []string
-	Gateway   string
+	Scheme   *runtime.Scheme
+	Log      logr.Logger
+	Provider i2gw.Provider
+	Gateway  string
 }
 
 func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -39,26 +40,38 @@ func (r *IngressReconciler) Reconcile(ctx context.Context, req ctrl.Request) (re
 		return ctrl.Result{}, err
 	}
 
-	resources, err := i2gw.ToGatewayAPIResources(ctx, instance.Namespace, "", r.Providers, r.Gateway)
-
-	if err != nil {
-		return ctrl.Result{}, err
+	pConf := &i2gw.ProviderConf{
+		Gateway: r.Gateway,
 	}
 
-	for _, resource := range resources {
-		for _, v := range resource.Gateways {
-			err = createOrUpdateGateway(ctx, &v, r.Client)
-			if err != nil {
-				log.Error(err, "Failed to create or update Gateway")
-				return ctrl.Result{}, err
-			}
+	converter := newConverter(pConf)
+
+	resources, errlist := converter.Convert(*instance)
+	if len(errlist) > 0 {
+		for _, err := range errlist {
+			log.Error(err, "Failed to convert Ingress to Gateway resources")
 		}
-		for _, v := range resource.HTTPRoutes {
-			err = createOrUpdateHttpRoute(ctx, &v, r.Client)
-			if err != nil {
-				log.Error(err, "Failed to create or update HTTPRoute")
-				return ctrl.Result{}, err
-			}
+		return ctrl.Result{}, fmt.Errorf("failed to convert Ingress to Gateway resources: %w", errlist)
+	}
+
+	for _, v := range resources.Gateways {
+		// if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
+		// 	return ctrl.Result{}, err
+		// }
+		err = createOrUpdateGateway(ctx, &v, r.Client)
+		if err != nil {
+			log.Error(err, "Failed to create or update Gateway")
+			return ctrl.Result{}, err
+		}
+	}
+	for _, v := range resources.HTTPRoutes {
+		if err := controllerutil.SetControllerReference(instance, &v, r.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+		err = createOrUpdateHttpRoute(ctx, &v, r.Client)
+		if err != nil {
+			log.Error(err, "Failed to create or update HTTPRoute")
+			return ctrl.Result{}, err
 		}
 	}
 
@@ -69,7 +82,7 @@ func createOrUpdateHttpRoute(ctx context.Context, desired *gwapiv1.HTTPRoute, c 
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
 		existing.Labels = desired.Labels
-		existing.Annotations = mergeMaps(desired.Annotations, existing.Annotations)
+		existing.Annotations = common.MergeMaps(desired.Annotations, existing.Annotations)
 		existing.OwnerReferences = desired.OwnerReferences
 		existing.Spec = desired.Spec
 		return nil
@@ -85,7 +98,7 @@ func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c clie
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
 		existing.Labels = desired.Labels
-		existing.Annotations = mergeMaps(desired.Annotations, existing.Annotations)
+		existing.Annotations = common.MergeMaps(desired.Annotations, existing.Annotations)
 		existing.OwnerReferences = desired.OwnerReferences
 		existing.Spec = desired.Spec
 		return nil
