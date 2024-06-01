@@ -47,14 +47,14 @@ func redirectHttpsFeature(ingresses []networkingv1.Ingress, gatewayResources *i2
 
 func needsRedirectToHttps(ingress networkingv1.Ingress) bool {
 	v, ok := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]
-	if ok && strings.ToLower(v) != "true" {
-		if ingress.Spec.TLS == nil {
-			return false
+	if ok && strings.ToLower(v) == "true" {
+		return true
+	}
+	if ingress.Spec.TLS != nil {
+		v, ok = ingress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
+		if ok && strings.ToLower(v) != "false" {
+			return true
 		}
 	}
-	v, ok = ingress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
-	if ok && strings.ToLower(v) == "false" {
-		return false
-	}
-	return true
+	return false
 }
