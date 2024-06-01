@@ -1,77 +1,60 @@
 package ingressnginx
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
 	networkingv1 "k8s.io/api/networking/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/utils/ptr"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 var (
 	httpsRedirectScheme = "https"
-	httpsRedirectPort   = gatewayv1.PortNumber(443)
 )
 
 func redirectHttpsFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
 	ruleGroups := common.GetRuleGroups(ingresses)
 	for _, rg := range ruleGroups {
-		if redirectHttpsAnnotationEnabled(rg) {
-			key := types.NamespacedName{Namespace: rg.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
-			httpRoute, ok := gatewayResources.HTTPRoutes[key]
-			if !ok {
-				continue
+		for _, rule := range rg.Rules {
+			if needsRedirectToHttps(rule.Ingress) {
+				if rule.Ingress.Spec.Rules == nil {
+					continue
+				}
+				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+				httpRoute, ok := gatewayResources.HTTPRoutes[key]
+				if !ok {
+					continue
+				}
+				for i, rule := range httpRoute.Spec.Rules {
+					rule.Filters = append(rule.Filters, gatewayv1.HTTPRouteFilter{
+						Type: gatewayv1.HTTPRouteFilterRequestRedirect,
+						RequestRedirect: &gatewayv1.HTTPRequestRedirectFilter{
+							Scheme:     ptr.To(httpsRedirectScheme),
+							StatusCode: ptr.To(int(301)),
+						},
+					})
+					httpRoute.Spec.Rules[i] = rule
+				}
 			}
-			redirectRoute := httpsRedirectHTTPRoute(rg)
-			redirectRoute.Spec.ParentRefs = []gatewayv1.ParentReference{httpRoute.Spec.ParentRefs[0]}
-			namespacedName := types.NamespacedName{Namespace: rg.Namespace, Name: httpsRedirectRouteName(rg.Name, rg.Host)}
-			gatewayResources.HTTPRoutes[namespacedName] = redirectRoute
 		}
 	}
 	return nil
 }
 
-func redirectHttpsAnnotationEnabled(rg common.IngressRuleGroup) bool {
-	for _, ir := range rg.Rules {
-		ingress := ir.Ingress
-		if c := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]; c == "true" {
-			return true
+func needsRedirectToHttps(ingress networkingv1.Ingress) bool {
+	v, ok := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]
+	if ok && strings.ToLower(v) != "true" {
+		if ingress.Spec.TLS == nil {
+			return false
 		}
 	}
-	return false
-}
-
-func httpsRedirectHTTPRoute(rg common.IngressRuleGroup) gatewayv1.HTTPRoute {
-	httpRoute := gatewayv1.HTTPRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      httpsRedirectRouteName(rg.Name, rg.Host),
-			Namespace: rg.Namespace,
-		},
-		Spec: gatewayv1.HTTPRouteSpec{
-			Hostnames: []gatewayv1.Hostname{gatewayv1.Hostname(rg.Host)},
-			Rules: []gatewayv1.HTTPRouteRule{
-				{
-					Filters: []gatewayv1.HTTPRouteFilter{
-						{
-							Type: "RequestRedirect",
-							RequestRedirect: &gatewayv1.HTTPRequestRedirectFilter{
-								Scheme: &httpsRedirectScheme,
-								Port:   &httpsRedirectPort,
-							},
-						},
-					},
-				},
-			},
-		},
+	v, ok = ingress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
+	if ok && strings.ToLower(v) == "false" {
+		return false
 	}
-	httpRoute.SetGroupVersionKind(common.GatewayGVK)
-	return httpRoute
-}
-
-func httpsRedirectRouteName(ingressName, host string) string {
-	return fmt.Sprintf("%s-redirect-https", common.RouteName(ingressName, host))
+	return true
 }
