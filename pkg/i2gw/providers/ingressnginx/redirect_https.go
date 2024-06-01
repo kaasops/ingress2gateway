@@ -52,9 +52,10 @@ func needsRedirectToHttps(ingress networkingv1.Ingress) bool {
 	}
 	if ingress.Spec.TLS != nil {
 		v, ok = ingress.Annotations["nginx.ingress.kubernetes.io/ssl-redirect"]
-		if ok && strings.ToLower(v) != "false" {
-			return true
+		if ok && strings.ToLower(v) == "false" {
+			return false
 		}
+		return true
 	}
 	return false
 }
