@@ -20,7 +20,7 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 	ruleGroups := common.GetRuleGroups(ingresses)
 	for _, rg := range ruleGroups {
 		for _, rule := range rg.Rules {
-			if needSslRedirect(rule.Ingress) {
+			if requireSSLRedirect(rule.Ingress) {
 				if rule.Ingress.Spec.Rules == nil {
 					continue
 				}
@@ -45,7 +45,7 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 	return nil
 }
 
-func needSslRedirect(ingress networkingv1.Ingress) bool {
+func requireSSLRedirect(ingress networkingv1.Ingress) bool {
 	v, ok := ingress.Annotations["nginx.ingress.kubernetes.io/force-ssl-redirect"]
 	if ok && strings.ToLower(v) == "true" {
 		return true
