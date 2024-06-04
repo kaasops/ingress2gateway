@@ -17,6 +17,7 @@ var (
 )
 
 func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
+	var errs field.ErrorList
 	ruleGroups := common.GetRuleGroups(ingresses)
 	for _, rg := range ruleGroups {
 		for _, rule := range rg.Rules {
@@ -27,18 +28,10 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
 				httpRoute, ok := gatewayResources.HTTPRoutes[key]
 				if !ok {
-					continue
+					errs = append(errs, field.NotFound(field.NewPath("HTTPRoute"), key))
 				}
-				for i, rule := range httpRoute.Spec.Rules {
-					rule.Filters = append(rule.Filters, gatewayv1.HTTPRouteFilter{
-						Type: gatewayv1.HTTPRouteFilterRequestRedirect,
-						RequestRedirect: &gatewayv1.HTTPRequestRedirectFilter{
-							Scheme:     ptr.To(httpsRedirectScheme),
-							StatusCode: ptr.To(int(301)),
-						},
-					})
-					httpRoute.Spec.Rules[i] = rule
-				}
+				appendRedirectFilter(&httpRoute)
+				gatewayResources.HTTPRoutes[key] = httpRoute
 			}
 		}
 	}
@@ -58,4 +51,18 @@ func requireSSLRedirect(ingress networkingv1.Ingress) bool {
 		return true
 	}
 	return false
+}
+
+func appendRedirectFilter(httpRoute *gatewayv1.HTTPRoute) {
+	httpRoute.Spec.Rules = append(httpRoute.Spec.Rules, gatewayv1.HTTPRouteRule{
+		Filters: []gatewayv1.HTTPRouteFilter{
+			{
+				Type: gatewayv1.HTTPRouteFilterRequestRedirect,
+				RequestRedirect: &gatewayv1.HTTPRequestRedirectFilter{
+					Scheme:     ptr.To(httpsRedirectScheme),
+					StatusCode: ptr.To(301),
+				},
+			},
+		},
+	})
 }
