@@ -3,9 +3,9 @@ kind: Ingress
 metadata:
   name: echo-server
   namespace: default
-  # annotations:
-  #   nginx.ingress.kubernetes.io/use-regex: "true"
-  #   nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  annotations:
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   rules:
   - host: echo-server.vagrant.local
@@ -16,5 +16,5 @@ spec:
             name: echo-server
             port:
               number: 8080
-        path: /endpoint*
+        path: /
         pathType: Prefix
