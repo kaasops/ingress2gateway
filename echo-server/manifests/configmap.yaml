@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: echo-server-config
+  labels:
+    app: echo-server
+data:
+  config.yaml: |
+    endpoints: [
+      "/",
+      "/endpoint1", 
+      "/endpoint2"
+    ]
