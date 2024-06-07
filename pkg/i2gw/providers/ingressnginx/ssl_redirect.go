@@ -16,6 +16,7 @@ import (
 
 var (
 	httpsRedirectScheme = "https"
+	httpGatewaySection  = "http"
 )
 
 func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
@@ -45,7 +46,13 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 					Spec: gatewayv1.HTTPRouteSpec{
 						Hostnames: []gatewayv1.Hostname{gatewayv1.Hostname(rg.Host)},
 						CommonRouteSpec: gatewayv1.CommonRouteSpec{
-							ParentRefs: httpRoute.Spec.ParentRefs,
+							ParentRefs: []gatewayv1.ParentReference{
+								{
+									Name:        gatewayv1.ObjectName(httpRoute.Spec.ParentRefs[0].Name),
+									Namespace:   common.PtrTo(gatewayv1.Namespace(httpRoute.Namespace)),
+									SectionName: common.PtrTo(gatewayv1.SectionName(httpGatewaySection)),
+								},
+							},
 						},
 						Rules: []gatewayv1.HTTPRouteRule{
 							{
