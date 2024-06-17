@@ -108,6 +108,7 @@ type GatewayResources struct {
 	TLSRoutes  map[types.NamespacedName]gatewayv1alpha2.TLSRoute
 	TCPRoutes  map[types.NamespacedName]gatewayv1alpha2.TCPRoute
 	UDPRoutes  map[types.NamespacedName]gatewayv1alpha2.UDPRoute
+	GRPCRoutes map[types.NamespacedName]gatewayv1alpha2.GRPCRoute
 
 	ReferenceGrants map[types.NamespacedName]gatewayv1beta1.ReferenceGrant
 }

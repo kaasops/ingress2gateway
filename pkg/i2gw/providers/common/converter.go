@@ -91,6 +91,12 @@ var (
 		Kind:    "TCPRoute",
 	}
 
+	GRPCRouteGVK = schema.GroupVersionKind{
+		Group:   "gateway.networking.k8s.io",
+		Version: "v1alpha2",
+		Kind:    "GRPCRoute",
+	}
+
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   "gateway.networking.k8s.io",
 		Version: "v1beta1",

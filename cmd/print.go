@@ -158,6 +158,17 @@ func (pr *PrintRunner) outputResult(gatewayResources []i2gw.GatewayResources) {
 	}
 
 	for _, r := range gatewayResources {
+		resourceCount += len(r.GRPCRoutes)
+		for _, grpcRoute := range r.GRPCRoutes {
+			grpcRoute := grpcRoute
+			err := pr.resourcePrinter.PrintObj(&grpcRoute, os.Stdout)
+			if err != nil {
+				fmt.Printf("# Error printing %s GRPCRoute: %v\n", grpcRoute.Name, err)
+			}
+		}
+	}
+
+	for _, r := range gatewayResources {
 		resourceCount += len(r.ReferenceGrants)
 		for _, referenceGrant := range r.ReferenceGrants {
 			referenceGrant := referenceGrant

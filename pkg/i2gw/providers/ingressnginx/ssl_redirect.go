@@ -50,7 +50,7 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 								{
 									Name:        gatewayv1.ObjectName(httpRoute.Spec.ParentRefs[0].Name),
 									Namespace:   common.PtrTo(gatewayv1.Namespace(httpRoute.Namespace)),
-									SectionName: common.PtrTo(gatewayv1.SectionName(httpGatewaySection)),
+									SectionName: common.PtrTo(gatewayv1.SectionName(httpGatewaySection)), // TODO: get from gateway by protocol
 								},
 							},
 						},
