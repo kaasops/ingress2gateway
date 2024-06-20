@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
+	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -62,6 +63,16 @@ func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 			return ctrl.Result{}, err
 		}
 	}
+	for _, v := range resources.GRPCRoutes {
+		if err := controllerutil.SetControllerReference(instance, &v, p.Scheme); err != nil {
+			return ctrl.Result{}, err
+		}
+		err = createOrUpdateGRPCRoute(ctx, &v, p.Client)
+		if err != nil {
+			log.Error(err, "Failed to create or update HTTPRoute")
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -82,6 +93,22 @@ func createOrUpdateHttpRoute(ctx context.Context, desired *gwapiv1.HTTPRoute, c 
 	return nil
 }
 
+func createOrUpdateGRPCRoute(ctx context.Context, desired *gatewayv1alpha2.GRPCRoute, c client.Client) error {
+	existing := desired.DeepCopy()
+	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
+		existing.Labels = desired.Labels
+		existing.Annotations = common.MergeMaps(desired.Annotations, existing.Annotations)
+		existing.OwnerReferences = desired.OwnerReferences
+		existing.Spec = desired.Spec
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create or update GRPCRoute: %w", err)
+	}
+	existing.DeepCopyInto(desired)
+	return nil
+}
+
 func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c client.Client) error {
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
@@ -92,7 +119,7 @@ func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c clie
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create or update HTTPRoute: %w", err)
+		return fmt.Errorf("failed to create or update Gateway: %w", err)
 	}
 	existing.DeepCopyInto(desired)
 	return nil
