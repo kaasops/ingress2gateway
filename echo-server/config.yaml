@@ -1,0 +1,4 @@
+endpoints: [
+  "/endpoint1", 
+  "/endpoint2"
+]

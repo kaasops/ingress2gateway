@@ -41,9 +41,9 @@ func ReadIngressesFromCluster(ctx context.Context, client client.Client, ingress
 
 	ingresses := map[types.NamespacedName]*networkingv1.Ingress{}
 	for i, ingress := range ingressList.Items {
-		if GetIngressClass(ingress) != ingressClass {
-			continue
-		}
+		// if GetIngressClass(ingress) != ingressClass {
+		// 	continue
+		// }
 		ingresses[types.NamespacedName{Namespace: ingress.Namespace, Name: ingress.Name}] = &ingressList.Items[i]
 	}
 

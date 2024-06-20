@@ -30,7 +30,7 @@ import (
 	gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 )
 
-func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string) ([]GatewayResources, error) {
+func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile string, providers []string, gateway string) ([]GatewayResources, error) {
 	var clusterClient client.Client
 
 	if inputFile == "" {
@@ -46,9 +46,10 @@ func ToGatewayAPIResources(ctx context.Context, namespace string, inputFile stri
 		clusterClient = client.NewNamespacedClient(cl, namespace)
 	}
 
-	providerByName, err := constructProviders(&ProviderConf{
+	providerByName, err := ConstructProviders(&ProviderConf{
 		Client:    clusterClient,
 		Namespace: namespace,
+		Gateway:   gateway,
 	}, providers)
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func readProviderResourcesFromCluster(ctx context.Context, providerByName map[Pr
 
 // constructProviders constructs a map of concrete Provider implementations
 // by their ProviderName.
-func constructProviders(conf *ProviderConf, providers []string) (map[ProviderName]Provider, error) {
+func ConstructProviders(conf *ProviderConf, providers []string) (map[ProviderName]Provider, error) {
 	providerByName := make(map[ProviderName]Provider, len(ProviderConstructorByName))
 
 	for _, requestedProvider := range providers {

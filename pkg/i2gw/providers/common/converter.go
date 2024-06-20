@@ -91,6 +91,12 @@ var (
 		Kind:    "TCPRoute",
 	}
 
+	GRPCRouteGVK = schema.GroupVersionKind{
+		Group:   "gateway.networking.k8s.io",
+		Version: "v1alpha2",
+		Kind:    "GRPCRoute",
+	}
+
 	ReferenceGrantGVK = schema.GroupVersionKind{
 		Group:   "gateway.networking.k8s.io",
 		Version: "v1beta1",
@@ -194,7 +200,9 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 				gatewayv1.SecretObjectReference{Name: gatewayv1.ObjectName(tls.SecretName)})
 		}
 		gwKey := fmt.Sprintf("%s/%s", rg.namespace, rg.ingressClass)
-		listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
+		if options.Gateway == "" {
+			listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
+		}
 		httpRoute, errs := rg.toHTTPRoute(options)
 		httpRoutes = append(httpRoutes, httpRoute)
 		errors = append(errors, errs...)
@@ -302,9 +310,12 @@ func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpeci
 	}
 	httpRoute.SetGroupVersionKind(HTTPRouteGVK)
 
-	if rg.ingressClass != "" {
+	if options.Gateway != "" {
+		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{GatewayRef(options.Gateway)}
+	} else if rg.ingressClass != "" {
 		httpRoute.Spec.ParentRefs = []gatewayv1.ParentReference{{Name: gatewayv1.ObjectName(rg.ingressClass)}}
 	}
+
 	if rg.host != "" {
 		httpRoute.Spec.Hostnames = []gatewayv1.Hostname{gatewayv1.Hostname(rg.host)}
 	}
@@ -411,4 +422,17 @@ func toBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.
 			Name:  gatewayv1.ObjectName(ib.Resource.Name),
 		},
 	}, nil
+}
+
+func GatewayRef(gateway string) gatewayv1.ParentReference {
+	result := strings.Split(gateway, "/")
+	if len(result) != 2 {
+		fmt.Printf("error parsing predefined gateway: %s\n", gateway)
+		return gatewayv1.ParentReference{}
+	}
+	ns := gatewayv1.Namespace(result[0])
+	return gatewayv1.ParentReference{
+		Name:      gatewayv1.ObjectName(result[1]),
+		Namespace: &ns,
+	}
 }

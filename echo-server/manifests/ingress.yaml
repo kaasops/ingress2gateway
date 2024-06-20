@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: echo-server
+  namespace: default
+  annotations:
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+spec:
+  rules:
+  - host: echo-server.vagrant.local
+    http:
+      paths:
+      - backend:
+          service:
+            name: echo-server
+            port:
+              number: 8080
+        path: /
+        pathType: Prefix
