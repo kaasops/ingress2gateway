@@ -36,7 +36,7 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 			canaryFeature,
 			sslRedirectFeature,
 			useRegexFeature,
-			backendProtocolFeature,
+			grpcBackendProtocolFeature,
 		},
 		implementationSpecificOptions: i2gw.ProviderImplementationSpecificOptions{
 			Gateway: conf.Gateway,
