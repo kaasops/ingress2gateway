@@ -2,8 +2,8 @@ name: Build and Test
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - 'develop'
 jobs:
   build-and-push-docker-image:
     name: Build and push Docker image
@@ -14,7 +14,7 @@ jobs:
 
       - name: Get tag
         id: tag
-        run: echo  "TAG=$(git describe --tags HEAD)" >> $GITHUB_OUTPUT
+        run: echo  "TAG=$(git rev-parse --short  "$GITHUB_SHA")" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
