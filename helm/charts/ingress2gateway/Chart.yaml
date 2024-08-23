@@ -1,0 +1,10 @@
+apiVersion: v2
+name: ingress2gateway
+description: A Helm chart to install ingress2gateway
+type: application
+version: 0.0.1
+appVersion: "v0.0.1"
+
+home: https://github.com/kaasops/ingress2gateway
+sources: 
+  - https://github.com/kaasops/ingress2gateway
