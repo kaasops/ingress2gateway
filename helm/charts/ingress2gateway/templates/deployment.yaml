@@ -25,7 +25,7 @@ spec:
   template:
     metadata:
       labels:
-      {{- include "chart.selectorLabels" . | nindent 6 }}
+        {{- include "chart.selectorLabels" . | nindent 6 }}
     spec:
     {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
