@@ -5,7 +5,7 @@ namespaceOverride: ""
 replicaCount: 1
 
 image:
-  repository: kaasops/vector-operator
+  repository: kaasops/ingress2gateway
   tag: "" # rewrites Chart.AppVersion
   pullPolicy: IfNotPresent
 
