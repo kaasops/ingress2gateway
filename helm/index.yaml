@@ -2,8 +2,21 @@ apiVersion: v1
 entries:
   ingress2gateway:
   - apiVersion: v2
+    appVersion: v0.0.4
+    created: "2024-08-27T11:01:03.328879+03:00"
+    description: A Helm chart to install ingress2gateway
+    digest: 3b68cc8431b295b7e597f7b183ef09ce01fb648bfa454d405949a505f196e0db
+    home: https://github.com/kaasops/ingress2gateway
+    name: ingress2gateway
+    sources:
+    - https://github.com/kaasops/ingress2gateway
+    type: application
+    urls:
+    - https://kaasops.github.io/ingress2gateway/helm/packages/ingress2gateway-0.0.4.tgz
+    version: 0.0.4
+  - apiVersion: v2
     appVersion: v0.0.3
-    created: "2024-08-26T17:58:30.976361+03:00"
+    created: "2024-08-27T11:01:03.328685+03:00"
     description: A Helm chart to install ingress2gateway
     digest: 71869fd39c04d41519a6bd50ecf5efab620d87277e3723a4efe5b53046f7ba8f
     home: https://github.com/kaasops/ingress2gateway
@@ -16,7 +29,7 @@ entries:
     version: 0.0.3
   - apiVersion: v2
     appVersion: v0.0.2
-    created: "2024-08-26T17:58:30.97509+03:00"
+    created: "2024-08-27T11:01:03.32819+03:00"
     description: A Helm chart to install ingress2gateway
     digest: 3104d6c502987e432d231942cd93ee56edd21472b51e90466f0ce4a245096411
     home: https://github.com/kaasops/ingress2gateway
@@ -29,7 +42,7 @@ entries:
     version: 0.0.2
   - apiVersion: v2
     appVersion: v0.0.1
-    created: "2024-08-26T17:58:30.974922+03:00"
+    created: "2024-08-27T11:01:03.327628+03:00"
     description: A Helm chart to install ingress2gateway
     digest: 9e764c5894d5db12ffad95c14335152c99b1fd533aa582de83060512da642e04
     home: https://github.com/kaasops/ingress2gateway
@@ -40,4 +53,4 @@ entries:
     urls:
     - https://kaasops.github.io/ingress2gateway/helm/packages/ingress2gateway-0.0.1.tgz
     version: 0.0.1
-generated: "2024-08-26T17:58:30.974662+03:00"
+generated: "2024-08-27T11:01:03.325846+03:00"
