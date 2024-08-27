@@ -53,7 +53,7 @@ spec:
 {{ toYaml .Values.resources | indent 12 }}
         args:
           - "controller"
-          - "--provider=ingress-nginx"
+          - "--providers=ingress-nginx"
           {{- if .Values.gateway }}
           - "--gateway=$(GATEWAY)"
           {{- end }}
