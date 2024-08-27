@@ -70,3 +70,6 @@ annotations: {}
 # args:
 
 # gateway: default
+
+# comma separated list of providers
+providers: ingress-nginx

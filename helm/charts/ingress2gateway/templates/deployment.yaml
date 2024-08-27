@@ -42,20 +42,15 @@ spec:
       {{- end }}
       containers:
       - name: ingress2gateway
-        env:
-          {{- if .Values.gateway }}
-          - name: GATEWAY
-            value: "default"
-          {{- end }}
         imagePullPolicy: IfNotPresent
         image: {{ .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}
         resources:
 {{ toYaml .Values.resources | indent 12 }}
         args:
           - "controller"
-          - "--providers=ingress-nginx"
+          - "--providers={{ default "ingress-nginx" .Values.providers }}"
           {{- if .Values.gateway }}
-          - "--gateway=$(GATEWAY)"
+          - "--gateway={{ .Values.gateway }}"
           {{- end }}
         {{- with .Values.securityContext }}
         securityContext:
