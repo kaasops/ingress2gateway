@@ -9,13 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
 func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
 	var errs field.ErrorList
 	ruleGroups := common.GetRuleGroups(ingresses)
-	gatewayResources.GRPCRoutes = make(map[types.NamespacedName]gatewayv1alpha2.GRPCRoute)
+	gatewayResources.GRPCRoutes = make(map[types.NamespacedName]gatewayv1.GRPCRoute)
 	for _, rg := range ruleGroups {
 		if len(rg.Rules) == 0 {
 			continue
@@ -38,16 +37,16 @@ func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResourc
 
 }
 
-func toGRPCRoute(httpRoute gatewayv1.HTTPRoute) gatewayv1alpha2.GRPCRoute {
-	rules := make([]gatewayv1alpha2.GRPCRouteRule, 0, len(httpRoute.Spec.Rules))
+func toGRPCRoute(httpRoute gatewayv1.HTTPRoute) gatewayv1.GRPCRoute {
+	rules := make([]gatewayv1.GRPCRouteRule, 0, len(httpRoute.Spec.Rules))
 	for _, rule := range httpRoute.Spec.Rules {
 		rules = append(rules, toGRPCRule(rule))
 	}
-	return gatewayv1alpha2.GRPCRoute{
+	return gatewayv1.GRPCRoute{
 		ObjectMeta: httpRoute.ObjectMeta,
-		Spec: gatewayv1alpha2.GRPCRouteSpec{
+		Spec: gatewayv1.GRPCRouteSpec{
 			Hostnames: httpRoute.Spec.Hostnames,
-			CommonRouteSpec: gatewayv1alpha2.CommonRouteSpec{
+			CommonRouteSpec: gatewayv1.CommonRouteSpec{
 				ParentRefs: httpRoute.Spec.ParentRefs,
 			},
 			Rules: rules,
@@ -55,19 +54,19 @@ func toGRPCRoute(httpRoute gatewayv1.HTTPRoute) gatewayv1alpha2.GRPCRoute {
 	}
 }
 
-func toGRPCRule(httpRule gatewayv1.HTTPRouteRule) gatewayv1alpha2.GRPCRouteRule {
-	grpcBackendRefs := make([]gatewayv1alpha2.GRPCBackendRef, 0, len(httpRule.BackendRefs))
+func toGRPCRule(httpRule gatewayv1.HTTPRouteRule) gatewayv1.GRPCRouteRule {
+	grpcBackendRefs := make([]gatewayv1.GRPCBackendRef, 0, len(httpRule.BackendRefs))
 	for _, ref := range httpRule.BackendRefs {
 		grpcBackendRefs = append(grpcBackendRefs, toGRPCBackendRef(ref))
 	}
 
-	return gatewayv1alpha2.GRPCRouteRule{
+	return gatewayv1.GRPCRouteRule{
 		BackendRefs: grpcBackendRefs,
 	}
 }
 
-func toGRPCBackendRef(httpBackendRefs gatewayv1.HTTPBackendRef) gatewayv1alpha2.GRPCBackendRef {
-	return gatewayv1alpha2.GRPCBackendRef{
+func toGRPCBackendRef(httpBackendRefs gatewayv1.HTTPBackendRef) gatewayv1.GRPCBackendRef {
+	return gatewayv1.GRPCBackendRef{
 		BackendRef: httpBackendRefs.BackendRef,
 	}
 }

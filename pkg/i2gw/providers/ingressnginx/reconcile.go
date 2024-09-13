@@ -11,8 +11,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	gwapiv1 "sigs.k8s.io/gateway-api/apis/v1"
-	gatewayv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
@@ -77,7 +76,7 @@ func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 	return ctrl.Result{}, nil
 }
 
-func createOrUpdateHttpRoute(ctx context.Context, desired *gwapiv1.HTTPRoute, c client.Client) error {
+func createOrUpdateHttpRoute(ctx context.Context, desired *gatewayv1.HTTPRoute, c client.Client) error {
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
 		existing.Labels = desired.Labels
@@ -93,7 +92,7 @@ func createOrUpdateHttpRoute(ctx context.Context, desired *gwapiv1.HTTPRoute, c 
 	return nil
 }
 
-func createOrUpdateGRPCRoute(ctx context.Context, desired *gatewayv1alpha2.GRPCRoute, c client.Client) error {
+func createOrUpdateGRPCRoute(ctx context.Context, desired *gatewayv1.GRPCRoute, c client.Client) error {
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
 		existing.Labels = desired.Labels
@@ -109,7 +108,7 @@ func createOrUpdateGRPCRoute(ctx context.Context, desired *gatewayv1alpha2.GRPCR
 	return nil
 }
 
-func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c client.Client) error {
+func createOrUpdateGateway(ctx context.Context, desired *gatewayv1.Gateway, c client.Client) error {
 	existing := desired.DeepCopy()
 	_, err := controllerutil.CreateOrUpdate(ctx, c, existing, func() error {
 		existing.Labels = desired.Labels
@@ -128,6 +127,6 @@ func createOrUpdateGateway(ctx context.Context, desired *gwapiv1.Gateway, c clie
 func (p *Provider) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&networkingv1.Ingress{}).
-		Owns(&gwapiv1.HTTPRoute{}).
+		Owns(&gatewayv1.HTTPRoute{}).
 		Complete(p)
 }
