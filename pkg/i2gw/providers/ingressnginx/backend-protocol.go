@@ -31,7 +31,6 @@ func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResourc
 			delete(gatewayResources.HTTPRoutes, key)
 			gatewayResources.GRPCRoutes[key] = grpcRoute
 		}
-
 	}
 	return errs
 
