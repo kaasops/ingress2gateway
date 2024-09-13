@@ -40,6 +40,7 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 		},
 		implementationSpecificOptions: i2gw.ProviderImplementationSpecificOptions{
 			Gateway: conf.Gateway,
+			ToImplementationSpecificHTTPPathTypeMatch: implementationSpecificHTTPPathTypeMatch,
 		},
 	}
 }
