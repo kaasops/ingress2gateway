@@ -128,5 +128,6 @@ func (p *Provider) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&networkingv1.Ingress{}).
 		Owns(&gatewayv1.HTTPRoute{}).
+		Owns(&gatewayv1.GRPCRoute{}).
 		Complete(p)
 }
