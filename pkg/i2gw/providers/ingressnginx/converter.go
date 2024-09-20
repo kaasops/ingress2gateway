@@ -33,7 +33,7 @@ type converter struct {
 func newConverter(conf *i2gw.ProviderConf) *converter {
 	return &converter{
 		featureParsers: []i2gw.FeatureParser{
-			canaryFeature,
+			// canaryFeature,
 			// sslRedirectFeature,
 			useRegexFeature,
 			grpcBackendProtocolFeature,
