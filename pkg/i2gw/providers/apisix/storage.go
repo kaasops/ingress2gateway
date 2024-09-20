@@ -17,16 +17,19 @@ limitations under the License.
 package apisix
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 type storage struct {
 	Ingresses map[types.NamespacedName]*networkingv1.Ingress
+	Services  map[types.NamespacedName]*corev1.Service
 }
 
 func newResourcesStorage() *storage {
 	return &storage{
 		Ingresses: map[types.NamespacedName]*networkingv1.Ingress{},
+		Services:  map[types.NamespacedName]*corev1.Service{},
 	}
 }

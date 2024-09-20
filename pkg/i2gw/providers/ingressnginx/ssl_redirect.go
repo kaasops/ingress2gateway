@@ -6,6 +6,7 @@ import (
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -19,7 +20,7 @@ var (
 	httpGatewaySection  = "http"
 )
 
-func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
+func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources, services map[types.NamespacedName]*corev1.Service) field.ErrorList {
 	var errs field.ErrorList
 	ruleGroups := common.GetRuleGroups(ingresses)
 	for _, rg := range ruleGroups {
@@ -28,13 +29,13 @@ func sslRedirectFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 				if rule.Ingress.Spec.Rules == nil {
 					continue
 				}
-				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: rg.Name}
 				httpRoute, ok := gatewayResources.HTTPRoutes[key]
 				if !ok {
 					errs = append(errs, field.NotFound(field.NewPath("HTTPRoute"), key))
 				}
 
-				redirectKey := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: fmt.Sprintf("%s-redirect", common.RouteName(rg.Name, rg.Host))}
+				redirectKey := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: fmt.Sprintf("%s-redirect", rg.Name)}
 				if _, ok := gatewayResources.HTTPRoutes[redirectKey]; ok {
 					continue
 				}

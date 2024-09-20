@@ -34,7 +34,7 @@ func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 		return ctrl.Result{}, nil
 	}
 
-	resources, errlist := p.converter.Convert(*instance)
+	resources, errlist := p.converter.Convert([]networkingv1.Ingress{*instance}, p.storage)
 	if len(errlist) > 0 {
 		for _, err := range errlist {
 			log.Error(err, "Failed to convert Ingress to Gateway resources")

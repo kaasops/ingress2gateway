@@ -19,6 +19,7 @@ package ingressnginx
 import (
 	"sort"
 
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -27,8 +28,14 @@ type OrderedIngressMap struct {
 	ingressNames   []types.NamespacedName
 	ingressObjects map[types.NamespacedName]*networkingv1.Ingress
 }
+
+type OrderedServicesMap struct {
+	servicesObjects map[types.NamespacedName]*corev1.Service
+}
+
 type storage struct {
 	Ingresses OrderedIngressMap
+	Services  OrderedServicesMap
 }
 
 func newResourcesStorage() *storage {
@@ -58,4 +65,19 @@ func (oim *OrderedIngressMap) FromMap(ingresses map[types.NamespacedName]*networ
 	})
 	oim.ingressNames = ingNames
 	oim.ingressObjects = ingresses
+}
+
+func (osm *OrderedServicesMap) FromMap(services map[types.NamespacedName]*corev1.Service) {
+	svcNames := []types.NamespacedName{}
+	for svc := range services {
+		svcNames = append(svcNames, svc)
+	}
+	sort.Slice(svcNames, func(i, j int) bool {
+		return svcNames[i].Name < svcNames[j].Name
+	})
+	osm.servicesObjects = services
+}
+
+func (oim *OrderedServicesMap) List() map[types.NamespacedName]*corev1.Service {
+	return oim.servicesObjects
 }

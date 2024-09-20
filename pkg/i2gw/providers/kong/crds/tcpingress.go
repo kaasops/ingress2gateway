@@ -201,7 +201,7 @@ func (a *tcpIngressAggregator) toRoutesAndGateways() ([]gatewayv1alpha2.TCPRoute
 func (rg *tcpIngressRuleGroup) toTCPRoute() gatewayv1alpha2.TCPRoute {
 	tcpRoute := gatewayv1alpha2.TCPRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      common.RouteName(rg.name, rg.host),
+			Name:      rg.name,
 			Namespace: rg.namespace,
 		},
 		Spec: gatewayv1alpha2.TCPRouteSpec{},
@@ -243,7 +243,7 @@ func (rg *tcpIngressRuleGroup) toTCPRoute() gatewayv1alpha2.TCPRoute {
 func (rg *tcpIngressRuleGroup) toTLSRoute() gatewayv1alpha2.TLSRoute {
 	tlsRoute := gatewayv1alpha2.TLSRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      common.RouteName(rg.name, rg.host),
+			Name:      rg.name,
 			Namespace: rg.namespace,
 		},
 		Spec: gatewayv1alpha2.TLSRouteSpec{},

@@ -34,7 +34,7 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 	return &converter{
 		featureParsers: []i2gw.FeatureParser{
 			canaryFeature,
-			sslRedirectFeature,
+			// sslRedirectFeature,
 			useRegexFeature,
 			grpcBackendProtocolFeature,
 		},
@@ -45,7 +45,12 @@ func newConverter(conf *i2gw.ProviderConf) *converter {
 	}
 }
 
-func (c *converter) Convert(ingressList ...v1.Ingress) (i2gw.GatewayResources, field.ErrorList) {
+func (c *converter) Convert(
+	ingressList []v1.Ingress,
+	storage *storage,
+) (i2gw.GatewayResources, field.ErrorList) {
+	c.implementationSpecificOptions.Services = storage.Services.List()
+
 	gatewayResources, errs := common.ToGateway(ingressList, c.implementationSpecificOptions)
 	if len(errs) > 0 {
 		return i2gw.GatewayResources{}, errs
@@ -53,7 +58,7 @@ func (c *converter) Convert(ingressList ...v1.Ingress) (i2gw.GatewayResources, f
 
 	for _, parseFeatureFunc := range c.featureParsers {
 		// Apply the feature parsing function to the gateway resources, one by one.
-		parseErrs := parseFeatureFunc(ingressList, &gatewayResources)
+		parseErrs := parseFeatureFunc(ingressList, &gatewayResources, storage.Services.List())
 		// Append the parsing errors to the error list.
 		errs = append(errs, parseErrs...)
 	}
@@ -61,6 +66,7 @@ func (c *converter) Convert(ingressList ...v1.Ingress) (i2gw.GatewayResources, f
 }
 
 func (c *converter) convert(storage *storage) (i2gw.GatewayResources, field.ErrorList) {
+	c.implementationSpecificOptions.Services = storage.Services.List()
 
 	// TODO(liorliberman) temporary until we decide to change ToGateway and featureParsers to get a map of [types.NamespacedName]*networkingv1.Ingress instead of a list
 	ingressList := storage.Ingresses.List()
@@ -74,7 +80,7 @@ func (c *converter) convert(storage *storage) (i2gw.GatewayResources, field.Erro
 
 	for _, parseFeatureFunc := range c.featureParsers {
 		// Apply the feature parsing function to the gateway resources, one by one.
-		parseErrs := parseFeatureFunc(ingressList, &gatewayResources)
+		parseErrs := parseFeatureFunc(ingressList, &gatewayResources, storage.Services.servicesObjects)
 		// Append the parsing errors to the error list.
 		errs = append(errs, parseErrs...)
 	}

@@ -22,6 +22,7 @@ import (
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -29,7 +30,7 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func canaryFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
+func canaryFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources, services map[types.NamespacedName]*corev1.Service) field.ErrorList {
 	ruleGroups := common.GetRuleGroups(ingresses)
 
 	for _, rg := range ruleGroups {
@@ -41,10 +42,10 @@ func canaryFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.Gate
 		for _, paths := range ingressPathsByMatchKey {
 			path := paths[0]
 
-			backendRefs, calculationErrs := calculateBackendRefWeight(paths)
+			backendRefs, calculationErrs := calculateBackendRefWeight(paths, rg.Namespace, services)
 			errs = append(errs, calculationErrs...)
 
-			key := types.NamespacedName{Namespace: path.ingress.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+			key := types.NamespacedName{Namespace: path.ingress.Namespace, Name: rg.Name}
 			httpRoute, ok := gatewayResources.HTTPRoutes[key]
 			if !ok {
 				// If there wasn't an HTTPRoute for this Ingress, we can skip it as something is wrong.
@@ -114,7 +115,7 @@ func patchHTTPRouteWithBackendRefs(httpRoute *gatewayv1.HTTPRoute, backendRefs [
 	}
 }
 
-func calculateBackendRefWeight(paths []ingressPath) ([]gatewayv1.HTTPBackendRef, field.ErrorList) {
+func calculateBackendRefWeight(paths []ingressPath, namespace string, services map[types.NamespacedName]*corev1.Service) ([]gatewayv1.HTTPBackendRef, field.ErrorList) {
 	var errors field.ErrorList
 	var backendRefs []gatewayv1.HTTPBackendRef
 
@@ -124,7 +125,7 @@ func calculateBackendRefWeight(paths []ingressPath) ([]gatewayv1.HTTPBackendRef,
 	var weightTotal = 100
 
 	for i, path := range paths {
-		backendRef, err := common.ToBackendRef(path.path.Backend, field.NewPath("paths", "backends").Index(i))
+		backendRef, err := common.ToBackendRef(path.path.Backend, namespace, services, field.NewPath("paths", "backends").Index(i))
 		if err != nil {
 			errors = append(errors, err)
 			continue
