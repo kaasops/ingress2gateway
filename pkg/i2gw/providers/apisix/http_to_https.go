@@ -19,6 +19,7 @@ package apisix
 import (
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -26,7 +27,7 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func httpToHTTPSFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
+func httpToHTTPSFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources, services map[types.NamespacedName]*corev1.Service) field.ErrorList {
 	var errs field.ErrorList
 	httpToHTTPSAnnotation := apisixAnnotation("http-to-https")
 	ruleGroups := common.GetRuleGroups(ingresses)
@@ -36,7 +37,7 @@ func httpToHTTPSFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw
 				if rule.Ingress.Spec.Rules == nil {
 					continue
 				}
-				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+				key := types.NamespacedName{Namespace: rule.Ingress.Namespace, Name: rg.Name}
 				httpRoute, ok := gatewayResources.HTTPRoutes[key]
 				if !ok {
 					errs = append(errs, field.NotFound(field.NewPath("HTTPRoute"), key))

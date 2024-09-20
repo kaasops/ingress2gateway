@@ -19,6 +19,7 @@ package i2gw
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -97,6 +98,7 @@ type ImplementationSpecificHTTPPathTypeMatchConverter func(*gatewayv1.HTTPPathMa
 type ProviderImplementationSpecificOptions struct {
 	ToImplementationSpecificHTTPPathTypeMatch ImplementationSpecificHTTPPathTypeMatchConverter
 	Gateway                                   string
+	Services                                  map[types.NamespacedName]*corev1.Service
 }
 
 // GatewayResources contains all Gateway-API objects.
@@ -118,4 +120,4 @@ type GatewayResources struct {
 //
 // Different FeatureParsers will run in undetermined order. The function must
 // modify / create only the required fields of the gateway resources and nothing else.
-type FeatureParser func([]networkingv1.Ingress, *GatewayResources) field.ErrorList
+type FeatureParser func([]networkingv1.Ingress, *GatewayResources, map[types.NamespacedName]*corev1.Service) field.ErrorList

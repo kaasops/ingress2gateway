@@ -5,13 +5,14 @@ import (
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw/providers/common"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
-func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources) field.ErrorList {
+func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResources *i2gw.GatewayResources, services map[types.NamespacedName]*corev1.Service) field.ErrorList {
 	var errs field.ErrorList
 	ruleGroups := common.GetRuleGroups(ingresses)
 	gatewayResources.GRPCRoutes = make(map[types.NamespacedName]gatewayv1.GRPCRoute)
@@ -21,7 +22,7 @@ func grpcBackendProtocolFeature(ingresses []networkingv1.Ingress, gatewayResourc
 		}
 		v, ok := rg.Rules[0].Ingress.Annotations["nginx.ingress.kubernetes.io/backend-protocol"]
 		if ok && strings.ToLower(v) == "grpc" {
-			key := types.NamespacedName{Namespace: rg.Namespace, Name: common.RouteName(rg.Name, rg.Host)}
+			key := types.NamespacedName{Namespace: rg.Namespace, Name: rg.Name}
 			httpRoute, ok := gatewayResources.HTTPRoutes[key]
 			if !ok {
 				errs = append(errs, field.NotFound(field.NewPath("HTTPRoute"), key))

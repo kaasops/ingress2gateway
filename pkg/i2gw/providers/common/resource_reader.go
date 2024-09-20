@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -48,6 +49,21 @@ func ReadIngressesFromCluster(ctx context.Context, client client.Client, ingress
 	}
 
 	return ingresses, nil
+}
+
+func ReadServicesFromCluster(ctx context.Context, client client.Client) (map[types.NamespacedName]*corev1.Service, error) {
+	var servicesList corev1.ServiceList
+	err := client.List(ctx, &servicesList)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get services from the cluster: %w", err)
+	}
+
+	services := map[types.NamespacedName]*corev1.Service{}
+	for i, service := range servicesList.Items {
+		services[types.NamespacedName{Namespace: service.Namespace, Name: service.Name}] = &servicesList.Items[i]
+	}
+
+	return services, nil
 }
 
 func ReadIngressesFromFile(filename, namespace, ingressClass string) (map[types.NamespacedName]*networkingv1.Ingress, error) {

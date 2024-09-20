@@ -43,6 +43,12 @@ func (r *resourceReader) readResourcesFromCluster(ctx context.Context) (*storage
 		return nil, err
 	}
 	storage.Ingresses.FromMap(ingresses)
+
+	services, err := common.ReadServicesFromCluster(ctx, r.conf.Client)
+	if err != nil {
+		return nil, err
+	}
+	storage.Services.FromMap(services)
 	return storage, nil
 }
 

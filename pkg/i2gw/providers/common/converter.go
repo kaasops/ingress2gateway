@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/kubernetes-sigs/ingress2gateway/pkg/i2gw"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +34,10 @@ import (
 // ToGateway converts the received ingresses to i2gw.GatewayResources,
 // without taking into consideration any provider specific logic.
 func ToGateway(ingresses []networkingv1.Ingress, options i2gw.ProviderImplementationSpecificOptions) (i2gw.GatewayResources, field.ErrorList) {
-	aggregator := ingressAggregator{ruleGroups: map[ruleGroupKey]*ingressRuleGroup{}}
+	aggregator := ingressAggregator{
+		ruleGroups: map[ruleGroupKey]*ingressRuleGroup{},
+		services:   options.Services,
+	}
 
 	var errs field.ErrorList
 	for _, ingress := range ingresses {
@@ -107,6 +111,7 @@ var (
 type ruleGroupKey string
 
 type ingressAggregator struct {
+	services        map[types.NamespacedName]*corev1.Service
 	ruleGroups      map[ruleGroupKey]*ingressRuleGroup
 	defaultBackends []ingressDefaultBackend
 }
@@ -203,7 +208,7 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 		if options.Gateway == "" {
 			listenersByNamespacedGateway[gwKey] = append(listenersByNamespacedGateway[gwKey], listener)
 		}
-		httpRoute, errs := rg.toHTTPRoute(options)
+		httpRoute, errs := rg.toHTTPRoute(options, a.services)
 		httpRoutes = append(httpRoutes, httpRoute)
 		errors = append(errors, errs...)
 	}
@@ -229,7 +234,7 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 		}
 		httpRoute.SetGroupVersionKind(HTTPRouteGVK)
 
-		backendRef, err := toBackendRef(db.backend, field.NewPath(db.name, "paths", "backends").Index(i))
+		backendRef, err := toBackendRef(db.backend, db.namespace, a.services, field.NewPath(db.name, "paths", "backends").Index(i))
 		if err != nil {
 			errors = append(errors, err)
 		} else {
@@ -294,11 +299,15 @@ func (a *ingressAggregator) toHTTPRoutesAndGateways(options i2gw.ProviderImpleme
 	return httpRoutes, gateways, errors
 }
 
-func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpecificOptions) (gatewayv1.HTTPRoute, field.ErrorList) {
+func (rg *ingressRuleGroup) toHTTPRoute(
+	options i2gw.ProviderImplementationSpecificOptions,
+	services map[types.NamespacedName]*corev1.Service,
+) (gatewayv1.HTTPRoute, field.ErrorList) {
 	ingressPathsByMatchKey := groupIngressPathsByMatchKey(rg.rules)
 	httpRoute := gatewayv1.HTTPRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      RouteName(rg.name, rg.host),
+			// Name:      RouteName(rg.name, rg.host),
+			Name:      rg.name,
 			Namespace: rg.namespace,
 		},
 		Spec: gatewayv1.HTTPRouteSpec{},
@@ -334,7 +343,7 @@ func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpeci
 			Matches: []gatewayv1.HTTPRouteMatch{*match},
 		}
 
-		backendRefs, errs := rg.configureBackendRef(paths)
+		backendRefs, errs := rg.configureBackendRef(paths, services)
 		errors = append(errors, errs...)
 		hrRule.BackendRefs = backendRefs
 
@@ -344,12 +353,12 @@ func (rg *ingressRuleGroup) toHTTPRoute(options i2gw.ProviderImplementationSpeci
 	return httpRoute, errors
 }
 
-func (rg *ingressRuleGroup) configureBackendRef(paths []ingressPath) ([]gatewayv1.HTTPBackendRef, field.ErrorList) {
+func (rg *ingressRuleGroup) configureBackendRef(paths []ingressPath, services map[types.NamespacedName]*corev1.Service) ([]gatewayv1.HTTPBackendRef, field.ErrorList) {
 	var errors field.ErrorList
 	var backendRefs []gatewayv1.HTTPBackendRef
 
 	for i, path := range paths {
-		backendRef, err := toBackendRef(path.path.Backend, field.NewPath("paths", "backends").Index(i))
+		backendRef, err := toBackendRef(path.path.Backend, rg.namespace, services, field.NewPath("paths", "backends").Index(i))
 		if err != nil {
 			errors = append(errors, err)
 			continue
@@ -402,16 +411,23 @@ func toHTTPRouteMatch(routePath networkingv1.HTTPIngressPath, path *field.Path, 
 	return match, nil
 }
 
-func toBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.BackendRef, *field.Error) {
+func toBackendRef(ib networkingv1.IngressBackend, namespace string, services map[types.NamespacedName]*corev1.Service, path *field.Path) (*gatewayv1.BackendRef, *field.Error) {
 	if ib.Service != nil {
+		var port int32
+		var err error
 		if ib.Service.Port.Name != "" {
-			fieldPath := path.Child("service", "port")
-			return nil, field.Invalid(fieldPath, "name", fmt.Sprintf("named ports not supported: %s", ib.Service.Port.Name))
+			port, err = getPortFromServiceByName(namespace, ib.Service.Name, ib.Service.Port.Name, services)
+			if err != nil {
+				fieldPath := path.Child("service", "port")
+				return nil, field.Invalid(fieldPath, err, "port not found")
+			}
+		} else {
+			port = ib.Service.Port.Number
 		}
 		return &gatewayv1.BackendRef{
 			BackendObjectReference: gatewayv1.BackendObjectReference{
 				Name: gatewayv1.ObjectName(ib.Service.Name),
-				Port: (*gatewayv1.PortNumber)(&ib.Service.Port.Number),
+				Port: (*gatewayv1.PortNumber)(&port),
 			},
 		}, nil
 	}
@@ -435,4 +451,28 @@ func GatewayRef(gateway string) gatewayv1.ParentReference {
 		Name:      gatewayv1.ObjectName(result[1]),
 		Namespace: &ns,
 	}
+}
+
+func getPortFromServiceByName(
+	namespace, serviceName, portName string,
+	services map[types.NamespacedName]*corev1.Service,
+) (int32, error) {
+	nn := types.NamespacedName{
+		Namespace: namespace,
+		Name:      serviceName,
+	}
+
+	service, ok := services[nn]
+	if !ok {
+		return 0, fmt.Errorf("service with name %v not found in namespace %v", serviceName, namespace)
+	}
+
+	for _, port := range service.Spec.Ports {
+		if port.Name == portName {
+			return port.Port, nil
+		}
+	}
+
+	return 0, fmt.Errorf("port with name %v not found in service with name %v in namespace %v", portName, serviceName, namespace)
+
 }

@@ -18,6 +18,7 @@ package kong
 
 import (
 	kongv1beta1 "github.com/kong/kubernetes-ingress-controller/v2/pkg/apis/configuration/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -25,6 +26,7 @@ import (
 type storage struct {
 	Ingresses    map[types.NamespacedName]*networkingv1.Ingress
 	TCPIngresses []kongv1beta1.TCPIngress
+	Services     map[types.NamespacedName]*corev1.Service
 }
 
 func newResourceStorage() *storage {

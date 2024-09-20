@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"regexp"
 
+	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	networkingv1beta1 "k8s.io/api/networking/v1beta1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
@@ -101,20 +103,27 @@ func NameFromHost(host string) string {
 	return step2
 }
 
-func RouteName(ingressName, host string) string {
-	return fmt.Sprintf("%s-%s", ingressName, NameFromHost(host))
-}
+// func RouteName(ingressName, host string) string {
+// 	return fmt.Sprintf("%s-%s", ingressName, NameFromHost(host))
+// }
 
-func ToBackendRef(ib networkingv1.IngressBackend, path *field.Path) (*gatewayv1.BackendRef, *field.Error) {
+func ToBackendRef(ib networkingv1.IngressBackend, namespace string, services map[types.NamespacedName]*corev1.Service, path *field.Path) (*gatewayv1.BackendRef, *field.Error) {
 	if ib.Service != nil {
+		var port int32
+		var err error
 		if ib.Service.Port.Name != "" {
-			fieldPath := path.Child("service", "port")
-			return nil, field.Invalid(fieldPath, "name", fmt.Sprintf("named ports not supported: %s", ib.Service.Port.Name))
+			port, err = getPortFromServiceByName(namespace, ib.Service.Name, ib.Service.Port.Name, services)
+			if err != nil {
+				fieldPath := path.Child("service", "port")
+				return nil, field.Invalid(fieldPath, err, "port not found")
+			}
+		} else {
+			port = ib.Service.Port.Number
 		}
 		return &gatewayv1.BackendRef{
 			BackendObjectReference: gatewayv1.BackendObjectReference{
 				Name: gatewayv1.ObjectName(ib.Service.Name),
-				Port: (*gatewayv1.PortNumber)(&ib.Service.Port.Number),
+				Port: (*gatewayv1.PortNumber)(&port),
 			},
 		}, nil
 	}
