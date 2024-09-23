@@ -34,6 +34,12 @@ func (p *Provider) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl
 		return ctrl.Result{}, nil
 	}
 
+	p.storage, err = p.resourceReader.readResourcesFromCluster(ctx)
+	if err != nil {
+		log.Error(err, "Failed to read resources from cluster")
+		return ctrl.Result{}, err
+	}
+
 	resources, errlist := p.converter.Convert([]networkingv1.Ingress{*instance}, p.storage)
 	if len(errlist) > 0 {
 		for _, err := range errlist {
