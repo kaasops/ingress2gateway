@@ -80,4 +80,12 @@ rules:
   - backendtlspolicies/status
   verbs:
   - update
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
 {{- end -}}
