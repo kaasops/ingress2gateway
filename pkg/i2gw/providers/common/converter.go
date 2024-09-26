@@ -53,9 +53,17 @@ func ToGateway(ingresses []networkingv1.Ingress, options i2gw.ProviderImplementa
 	}
 
 	routeByKey := make(map[types.NamespacedName]gatewayv1.HTTPRoute)
+	counter := 0
 	for _, route := range routes {
-		key := types.NamespacedName{Namespace: route.Namespace, Name: route.Name}
+		var key types.NamespacedName
+		if counter == 0 {
+			key = types.NamespacedName{Namespace: route.Namespace, Name: route.Name}
+		} else {
+			key = types.NamespacedName{Namespace: route.Namespace, Name: fmt.Sprintf("%s-%d", route.Name, counter)}
+			route.Name = fmt.Sprintf("%s-%d", route.Name, counter)
+		}
 		routeByKey[key] = route
+		counter++
 	}
 
 	gatewayByKey := make(map[types.NamespacedName]gatewayv1.Gateway)
